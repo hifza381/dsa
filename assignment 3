@@ -1,0 +1,132 @@
+#include <iostream>
+#include <vector>
+#include <limits>
+#include <queue>
+#include <chrono>
+
+using namespace std;
+
+const int INF = numeric_limits<int>::max();
+
+struct Edge {
+    int source, destination, weight;
+};
+
+// Function to read graph data from hardcoded data
+void readGraph(vector<vector<pair<int, int>>> &adjList, vector<Edge> &edges, int &numNodes) {
+    // Hardcoded graph data
+    numNodes = 5;
+    int numEdges = 8;
+    adjList.resize(numNodes);
+
+    vector<pair<int, pair<int, int>>> graphData = {
+        {0, {1, 4}},
+        {0, {2, 1}},
+        {2, {1, 2}},
+        {1, {3, 1}},
+        {2, {3, 5}},
+        {3, {4, 3}},
+        {1, {4, 7}},
+        {4, {0, 8}}
+    };
+
+    for (const auto& edgeData : graphData) {
+        int u = edgeData.first;
+        int v = edgeData.second.first;
+        int w = edgeData.second.second;
+        adjList[u].emplace_back(v, w);
+        edges.push_back({u, v, w});
+    }
+}
+
+// Dijkstra's Algorithm
+vector<int> dijkstra(const vector<vector<pair<int, int>>> &adjList, int source) {
+    int n = adjList.size();
+    vector<int> dist(n, INF);
+    priority_queue<pair<int, int>, vector<pair<int, int>>, greater<>> pq;
+    dist[source] = 0;
+    pq.push({0, source});
+
+    while (!pq.empty()) {
+        int u = pq.top().second;
+        pq.pop();
+
+        for (const auto &neighbor : adjList[u]) {
+            int v = neighbor.first;
+            int weight = neighbor.second;
+            if (dist[u] + weight < dist[v]) {
+                dist[v] = dist[u] + weight;
+                pq.push({dist[v], v});
+            }
+        }
+    }
+    return dist;
+}
+
+// Bellman-Ford Algorithm
+vector<int> bellmanFord(const vector<Edge> &edges, int numNodes, int source) {
+    vector<int> dist(numNodes, INF);
+    dist[source] = 0;
+
+    for (int i = 1; i < numNodes; ++i) {
+        for (const auto &edge : edges) {
+            int u = edge.source;
+            int v = edge.destination;
+            int weight = edge.weight;
+            if (dist[u] != INF && dist[u] + weight < dist[v]) {
+                dist[v] = dist[u] + weight;
+            }
+        }
+    }
+
+    // Check for negative-weight cycles
+    for (const auto &edge : edges) {
+        int u = edge.source;
+        int v = edge.destination;
+        int weight = edge.weight;
+        if (dist[u] != INF && dist[u] + weight < dist[v]) {
+            cerr << "Graph contains a negative-weight cycle" << endl;
+            exit(1);
+        }
+    }
+    return dist;
+}
+
+// Function to compare execution times
+void compareAlgorithms(const vector<vector<pair<int, int>>> &adjList, const vector<Edge> &edges, int numNodes, int source) {
+    auto start = chrono::high_resolution_clock::now();
+    vector<int> distDijkstra = dijkstra(adjList, source);
+    auto end = chrono::high_resolution_clock::now();
+    chrono::duration<double> dijkstraTime = end - start;
+
+    start = chrono::high_resolution_clock::now();
+    vector<int> distBellmanFord = bellmanFord(edges, numNodes, source);
+    end = chrono::high_resolution_clock::now();
+    chrono::duration<double> bellmanFordTime = end - start;
+
+    cout << "Dijkstra's Algorithm execution time: " << dijkstraTime.count() << " seconds" << endl;
+    cout << "Bellman-Ford Algorithm execution time: " << bellmanFordTime.count() << " seconds" << endl;
+
+    cout << "Distances using Dijkstra's Algorithm:" << endl;
+    for (int i = 0; i < distDijkstra.size(); ++i) {
+        cout << "Node " << i << ": " << distDijkstra[i] << endl;
+    }
+
+    cout << "Distances using Bellman-Ford Algorithm:" << endl;
+    for (int i = 0; i < distBellmanFord.size(); ++i) {
+        cout << "Node " << i << ": " << distBellmanFord[i] << endl;
+    }
+}
+
+int main() {
+    vector<vector<pair<int, int>>> adjList;
+    vector<Edge> edges;
+    int numNodes;
+
+    readGraph(adjList, edges, numNodes);
+
+    int source = 0; // Change this to the desired source node
+    compareAlgorithms(adjList, edges, numNodes, source);
+
+    return 0;
+}
